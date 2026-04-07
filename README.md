@@ -47,7 +47,8 @@ None
 
 Example Playbook
 ----------------
-Register the role in requirements.yml:
+Register the role in `requirements.yml`. The `src` value is Galaxy-style `namespace.role_name`; replace `localdomain` with your own organisation or username when publishing or vendoring the role:
+
 ```yaml
 - src: localdomain.openldap-ansible-role
   name: openldap
