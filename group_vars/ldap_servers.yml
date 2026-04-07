@@ -17,11 +17,34 @@ ldap_users:
     sn: user
     mail: admin@localdomain
     userpassword: admin
+  user:
+    cn: user
+    givenname: user
+    sn: user
+    mail: user@localdomain
+    userpassword: user
+  developer:
+    cn: developer
+    givenname: developer
+    sn: user
+    mail: developer@localdomain
+    userpassword: developer
+  manager:
+    cn: manager
+    givenname: manager
+    sn: user
+    mail: manager@localdomain
+    userpassword: manager
 
 ldap_groups:
   - name: devops
     members:
       - debian
+      - developer
   - name: admin
     members:
       - admin
+      - manager
+  - name: users
+    members:
+      - user
