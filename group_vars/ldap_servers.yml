@@ -1,0 +1,27 @@
+---
+ldap_basedn: dc=localdomain
+ldap_server_uri: ldap://127.0.0.1:389
+ldap_bind_pw: admin
+ldap_debconf_domain: localdomain
+
+ldap_users:
+  debian:
+    cn: debian
+    givenname: debian
+    sn: user
+    mail: debian@localdomain
+    userpassword: debian
+  admin:
+    cn: admin
+    givenname: admin
+    sn: user
+    mail: admin@localdomain
+    userpassword: admin
+
+ldap_groups:
+  - name: devops
+    members:
+      - debian
+  - name: admin
+    members:
+      - admin

@@ -1,9 +1,30 @@
 ---
+# Pre-seed slapd so apt does not block on interactive prompts (Debian/Ubuntu).
+- name: Pre-seed slapd debconf (noninteractive)
+  ansible.builtin.debconf:
+    name: slapd
+    question: "{{ item.question }}"
+    value: "{{ item.value }}"
+    vtype: "{{ item.vtype }}"
+  loop:
+    - question: slapd/password1
+      value: "{{ ldap_bind_pw }}"
+      vtype: password
+    - question: slapd/password2
+      value: "{{ ldap_bind_pw }}"
+      vtype: password
+    - question: slapd/dns_domain_name
+      value: "{{ ldap_debconf_domain | default('localdomain') }}"
+      vtype: string
+  when: ldap_bind_pw is defined
+
 - name: Install required packages
   apt:
     name: "{{packages}}"
     state: present
     update_cache: yes
+  environment:
+    DEBIAN_FRONTEND: noninteractive
   vars:
     packages:
     - slapd

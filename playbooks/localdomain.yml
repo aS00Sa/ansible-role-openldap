@@ -1,0 +1,9 @@
+---
+# Пример: роль по имени каталога репозитория (см. roles_path в ansible.cfg), как в ansible-role-nexus3-oss/install.yml.
+# Запуск из корня репозитория:
+#   ansible-playbook playbooks/localdomain.yml
+- name: Install OpenLDAP (localdomain)
+  hosts: ldap_servers
+  become: true
+  roles:
+    - role: ansible-role-openldap
