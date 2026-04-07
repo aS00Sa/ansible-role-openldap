@@ -1,0 +1,3 @@
+---
+# На Debian/Ubuntu при активном UFW открыть 389/tcp для доступа к slapd по сети.
+openldap_firewall_open_ldap_port: true

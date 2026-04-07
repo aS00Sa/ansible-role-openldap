@@ -30,3 +30,16 @@
     - slapd
     - ldap-utils
     - python3-ldap
+
+- name: Allow LDAP port in UFW when firewall is active
+  when: openldap_firewall_open_ldap_port | bool
+  block:
+    - name: Check UFW status
+      ansible.builtin.command: ufw status
+      register: openldap_ufw_status
+      changed_when: false
+      failed_when: false
+    - name: UFW allow OpenLDAP (389/tcp)
+      ansible.builtin.command: ufw allow 389/tcp
+      when: openldap_ufw_status.rc == 0 and ('Status: active' in openldap_ufw_status.stdout)
+      changed_when: true

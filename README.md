@@ -16,7 +16,10 @@ ldap_basedn:       dc=mydomain,dc=net         # Base DN
 ldap_server_uri:   ldap://localhost:389       # LDAP server URI
 ldap_bind_pw:      secret                     # bind password
 ldap_debconf_domain: mydomain.net             # optional (Debian): slapd debconf DNS domain for noninteractive install
+openldap_firewall_open_ldap_port: true       # optional (Debian): allow TCP 389 in UFW when UFW is active
 ```
+
+The role also expects a **dummy** LDAP user (uid `dummy`) in `ldap_users` so `groupOfUniqueNames` can be created; it is removed from group membership at the end of the play. The example `group_vars/ldap_servers.yml` includes this account.
 
 Additionally, to load users and groups, you should define the following structure (example aligned with the localdomain demo: `debian`, `admin`, `user`, `developer`, `manager`):
 
@@ -88,32 +91,36 @@ Include it in your playbooks:
 
 Local test install (localdomain)
 --------------------------------
-Example deploy uses SSH as user `debian` and a key (default `~/.ssh/id_ed25519` in [inventory-localdomain.ini](inventory-localdomain.ini)), [ansible.cfg](ansible.cfg) (same layout as `ansible-role-nexus3-oss`: `roles_path`, inventory, SSH multiplexing), and LDAP data in [group_vars/ldap_servers.yml](group_vars/ldap_servers.yml). The play references the role by repository directory name `ansible-role-openldap`.
+Example deploy: SSH as `debian` with the key from [inventory.ini](inventory.ini) or [inventory-localdomain.ini](inventory-localdomain.ini). The inventory host is named `ldap` so it matches a normal WSL login `ssh debian@ldap` (with `ansible_host` set to the server IP). LDAP variables are in [group_vars/ldap_servers.yml](group_vars/ldap_servers.yml) (includes a technical `dummy` user required by the role for `groupOfUniqueNames`). The play [playbooks/localdomain.yml](playbooks/localdomain.yml) loads this role by **path** to the repo root so it still works when Ansible ignores `ansible.cfg` (e.g. WSL and a clone on `/mnt/c/`).
 
-From the repository root (`inventory` is set in `ansible.cfg`):
+From the repository root, pass the inventory explicitly (recommended):
 
 ```bash
-ansible-playbook playbooks/localdomain.yml
+ansible-playbook -i inventory.ini playbooks/localdomain.yml
 ```
 
-Another inventory or SSH key:
+Another inventory file or SSH key:
 
 ```bash
 ansible-playbook -i inventory-localdomain.ini playbooks/localdomain.yml
-ANSIBLE_PRIVATE_KEY_FILE=~/.ssh/other_key ansible-playbook playbooks/localdomain.yml
+ANSIBLE_PRIVATE_KEY_FILE=~/.ssh/other_key ansible-playbook -i inventory.ini playbooks/localdomain.yml
 ```
+
+When `ansible.cfg` is loaded (repo not on a world-writable mount), you can omit `-i` if `inventory` is set there. If Ansible prints a warning about ignoring `ansible.cfg`, keep using `-i` as above or clone the repo onto a normal Linux filesystem (e.g. under `$HOME` in WSL).
 
 Override LDAP admin password:
 
 ```bash
-ansible-playbook playbooks/localdomain.yml -e ldap_bind_pw=yoursecret
+ansible-playbook -i inventory.ini playbooks/localdomain.yml -e ldap_bind_pw=yoursecret
 ```
 
 If `debian` uses sudo with a password on the target host:
 
 ```bash
-ansible-playbook playbooks/localdomain.yml --ask-become-pass
+ansible-playbook -i inventory.ini playbooks/localdomain.yml --ask-become-pass
 ```
+
+On Debian/Ubuntu targets with **UFW** enabled, the role opens **TCP 389** when `openldap_firewall_open_ldap_port` is true (default in [defaults/main.yml](defaults/main.yml)).
 
 Optional: Apache Directory Studio (Windows and Linux)
 -------------------------------------------------------
@@ -123,7 +130,7 @@ Download Studio, open **LDAP** → **New Connection**, then set fields to match 
 
 | Field | Example value |
 | ----- | ------------- |
-| Hostname | `ldap.localdomain` or `192.168.x.x` |
+| Hostname | `ldap` (same as `ssh debian@ldap`) or `192.168.x.x` |
 | Port | `389` |
 | Encryption method | `No encryption` (until TLS is configured on slapd) |
 | Bind DN | `dc=localdomain` (same as `ldap_basedn`) |

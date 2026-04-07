@@ -4,7 +4,14 @@ ldap_server_uri: ldap://127.0.0.1:389
 ldap_bind_pw: admin
 ldap_debconf_domain: localdomain
 
+# Учётка uid=dummy нужна задачам роли (groupOfUniqueNames); не включайте её в ldap_groups.
 ldap_users:
+  dummy:
+    cn: dummy
+    givenname: dummy
+    sn: user
+    mail: dummy@localdomain
+    userpassword: dummy
   debian:
     cn: debian
     givenname: debian
