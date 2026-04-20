@@ -95,34 +95,36 @@ ldap_groups:
 
 Локальный тест (localdomain)
 -----------------------------
-Развёртывание на сервер: SSH под `debian` с ключом из [inventory.ini](inventory.ini) или [inventory-localdomain.ini](inventory-localdomain.ini). В инвентаре хост назван `ldap`, чтобы совпадало с обычным входом из WSL: `ssh debian@ldap` (для подключения задан `ansible_host` — IP сервера). Переменные LDAP — в [group_vars/ldap_servers.yml](group_vars/ldap_servers.yml) (включая служебную учётку `dummy`, нужную роли для `groupOfUniqueNames`). Плейбук [playbooks/localdomain.yml](playbooks/localdomain.yml) подключает роль **по пути** к корню репозитория — так команда работает и когда Ansible не читает `ansible.cfg` (типично WSL и клон на `/mnt/c/`).
+Развёртывание: в инвентаре хост `ldap` (как `ssh debian@ldap`), `ansible_host` — IP в [inventory-dev.ini](inventory-dev.ini) (или [inventory.ini](inventory.ini) / [inventory-localdomain.ini](inventory-localdomain.ini)). Переменные LDAP — [group_vars/ldap_servers.yml](group_vars/ldap_servers.yml) (включая служебную `dummy` для `groupOfUniqueNames`). Основной плейбук: [playbooks/install.yml](playbooks/install.yml) (роль по пути из корня репозитория). [playbooks/localdomain.yml](playbooks/localdomain.yml) только подключает `install.yml`.
 
-Из корня репозитория явно укажите инвентарь:
-
-```bash
-ansible-playbook -i inventory.ini playbooks/localdomain.yml
-```
-
-Другой файл инвентаря или ключ:
+Типичный запуск из корня репозитория в WSL/Linux: явный `ansible.cfg`, пользователь, ключ, подробный лог и `tee`. Флаг `-vvv` ставьте **до** пути к плейбуку, иначе он может восприниматься как лишний аргумент:
 
 ```bash
-ansible-playbook -i inventory-localdomain.ini playbooks/localdomain.yml
-ANSIBLE_PRIVATE_KEY_FILE=~/.ssh/other_key ansible-playbook -i inventory.ini playbooks/localdomain.yml
+ANSIBLE_CONFIG="$PWD/ansible.cfg" ansible-playbook -vvv -i inventory-dev.ini -u debian --private-key ~/.ssh/id_rsa playbooks/install.yml 2>&1 | tee "ldap-inventory-localdomain-$(date +%Y%m%d-%H%M).log"
 ```
 
-Если `ansible.cfg` подхватывается (каталог не «world-writable»), можно опустить `-i`, если в конфиге задан `inventory`. При предупреждении про игнор `ansible.cfg` используйте `-i`, как выше, либо клонируйте репозиторий в обычную ФС Linux (например `$HOME` в WSL).
+Короче (если в инвентаре заданы `ansible_user` и ключ):
+
+```bash
+ansible-playbook -i inventory.ini playbooks/install.yml
+```
+
+Другой инвентарь или ключ:
+
+```bash
+ansible-playbook -i inventory-localdomain.ini playbooks/install.yml
+ANSIBLE_PRIVATE_KEY_FILE=~/.ssh/other_key ansible-playbook -i inventory.ini playbooks/install.yml
+```
+
+`ANSIBLE_CONFIG="$PWD/ansible.cfg"` помогает, когда Ansible игнорирует `ansible.cfg` из каталога на world-writable томе (например `/mnt/c/` в WSL).
 
 Переопределить пароль администратора LDAP:
 
 ```bash
-ansible-playbook -i inventory.ini playbooks/localdomain.yml -e ldap_bind_pw=yoursecret
+ANSIBLE_CONFIG="$PWD/ansible.cfg" ansible-playbook -i inventory-dev.ini -u debian --private-key ~/.ssh/id_rsa playbooks/install.yml -e ldap_bind_pw=yoursecret
 ```
 
-Если у `debian` на сервере sudo с паролем:
-
-```bash
-ansible-playbook -i inventory.ini playbooks/localdomain.yml --ask-become-pass
-```
+Если у `debian` на сервере sudo с паролем — добавьте `--ask-become-pass` к любой из команд выше.
 
 На Debian/Ubuntu при **активном UFW** роль открывает **TCP 389**, если включено `openldap_firewall_open_ldap_port` (по умолчанию — см. [defaults/main.yml](defaults/main.yml)).
 

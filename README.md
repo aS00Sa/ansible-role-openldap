@@ -91,34 +91,36 @@ Include it in your playbooks:
 
 Local test install (localdomain)
 --------------------------------
-Example deploy: SSH as `debian` with the key from [inventory.ini](inventory.ini) or [inventory-localdomain.ini](inventory-localdomain.ini). The inventory host is named `ldap` so it matches a normal WSL login `ssh debian@ldap` (with `ansible_host` set to the server IP). LDAP variables are in [group_vars/ldap_servers.yml](group_vars/ldap_servers.yml) (includes a technical `dummy` user required by the role for `groupOfUniqueNames`). The play [playbooks/localdomain.yml](playbooks/localdomain.yml) loads this role by **path** to the repo root so it still works when Ansible ignores `ansible.cfg` (e.g. WSL and a clone on `/mnt/c/`).
+Example deploy: the inventory host is `ldap` (same idea as `ssh debian@ldap`); set `ansible_host` in [inventory-dev.ini](inventory-dev.ini) (or [inventory.ini](inventory.ini) / [inventory-localdomain.ini](inventory-localdomain.ini)). LDAP variables are in [group_vars/ldap_servers.yml](group_vars/ldap_servers.yml) (includes a technical `dummy` user for `groupOfUniqueNames`). Main play: [playbooks/install.yml](playbooks/install.yml) (loads the role by path from the repo root). [playbooks/localdomain.yml](playbooks/localdomain.yml) only imports `install.yml`.
 
-From the repository root, pass the inventory explicitly (recommended):
-
-```bash
-ansible-playbook -i inventory.ini playbooks/localdomain.yml
-```
-
-Another inventory file or SSH key:
+From the repository root, typical WSL/Linux run with explicit config, user, key, verbose log, and tee (put `-vvv` **before** the playbook path so it is not mistaken for an extra playbook argument):
 
 ```bash
-ansible-playbook -i inventory-localdomain.ini playbooks/localdomain.yml
-ANSIBLE_PRIVATE_KEY_FILE=~/.ssh/other_key ansible-playbook -i inventory.ini playbooks/localdomain.yml
+ANSIBLE_CONFIG="$PWD/ansible.cfg" ansible-playbook -vvv -i inventory-dev.ini -u debian --private-key ~/.ssh/id_rsa playbooks/install.yml 2>&1 | tee "ldap-inventory-localdomain-$(date +%Y%m%d-%H%M).log"
 ```
 
-When `ansible.cfg` is loaded (repo not on a world-writable mount), you can omit `-i` if `inventory` is set there. If Ansible prints a warning about ignoring `ansible.cfg`, keep using `-i` as above or clone the repo onto a normal Linux filesystem (e.g. under `$HOME` in WSL).
+Shorter (inventory may set `ansible_user` / key):
+
+```bash
+ansible-playbook -i inventory.ini playbooks/install.yml
+```
+
+Another inventory or key:
+
+```bash
+ansible-playbook -i inventory-localdomain.ini playbooks/install.yml
+ANSIBLE_PRIVATE_KEY_FILE=~/.ssh/other_key ansible-playbook -i inventory.ini playbooks/install.yml
+```
+
+`ANSIBLE_CONFIG="$PWD/ansible.cfg"` avoids Ansible ignoring `ansible.cfg` when the repo sits on a world-writable mount (e.g. `/mnt/c/` under WSL).
 
 Override LDAP admin password:
 
 ```bash
-ansible-playbook -i inventory.ini playbooks/localdomain.yml -e ldap_bind_pw=yoursecret
+ANSIBLE_CONFIG="$PWD/ansible.cfg" ansible-playbook -i inventory-dev.ini -u debian --private-key ~/.ssh/id_rsa playbooks/install.yml -e ldap_bind_pw=yoursecret
 ```
 
-If `debian` uses sudo with a password on the target host:
-
-```bash
-ansible-playbook -i inventory.ini playbooks/localdomain.yml --ask-become-pass
-```
+If `debian` uses sudo with a password on the target host, add `--ask-become-pass` to any of the commands above.
 
 On Debian/Ubuntu targets with **UFW** enabled, the role opens **TCP 389** when `openldap_firewall_open_ldap_port` is true (default in [defaults/main.yml](defaults/main.yml)).
 

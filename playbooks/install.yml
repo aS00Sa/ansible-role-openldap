@@ -1,0 +1,9 @@
+---
+# Установка OpenLDAP (роль из корня репозитория).
+# Пример запуска из корня репозитория (см. README):
+#   ANSIBLE_CONFIG="$PWD/ansible.cfg" ansible-playbook -vvv -i inventory-dev.ini -u debian --private-key ~/.ssh/id_rsa playbooks/install.yml 2>&1 | tee "ldap-install-$(date +%Y%m%d-%H%M).log"
+- name: Install OpenLDAP
+  hosts: ldap_servers
+  become: true
+  roles:
+    - role: "{{ playbook_dir | dirname }}"

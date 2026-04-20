@@ -1,9 +1,3 @@
 ---
-# Роль подключается по пути к корню репозитория — работает и при игноре ansible.cfg (например /mnt/c/ в WSL).
-# Запуск из корня репозитория:
-#   ansible-playbook -i inventory.ini playbooks/localdomain.yml
-- name: Install OpenLDAP (localdomain)
-  hosts: ldap_servers
-  become: true
-  roles:
-    - role: "{{ playbook_dir | dirname }}"
+# Устаревшее имя: используйте playbooks/install.yml
+- import_playbook: install.yml
